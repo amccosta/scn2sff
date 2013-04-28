@@ -1,0 +1,113 @@
+# Makefile for conversion program
+# Version:  1.6.4 (12/10/93)
+# Author:  Antonio Costa, INESC-Norte.
+
+VERSION=V1.6.4
+
+CC=cc
+LINK=cc
+DEFS=-Bstatic -target sun4
+CFLAGS=$(DEFS) -O -w
+YFLAGS=-d
+LDFLAGS=-O -s
+BINDIR=.
+MANDIR=.
+MATHLIB=m
+EXEC=scn2sff
+DOCS=Makefile.ALL rgb2colors random_map externs $(EXEC).man
+HDRS=config.h defs.h extern.h alloc.h
+SRCS=alloc.c color.c data.c light.c local.c object.c main.c surface.c \
+     texture.c transfor.c scene.y tokens.l
+OBJS=alloc.o color.o data.o light.o local.o object.o main.o surface.o \
+     texture.o transfor.o scene.o tokens.o
+ETCS=y.tab.h tokens.c scene.c
+
+all:		install 
+
+install:	normal manual
+
+color.o: color.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+data.o: data.c defs.h config.h 
+	$(CC) $(CFLAGS) -c $*.c
+
+light.o: light.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+local.o: local.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+object.o: object.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+main.o: main.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+surface.o: surface.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+texture.o: texture.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+transfor.o: transfor.c config.h defs.h extern.h
+	$(CC) $(CFLAGS) -c $*.c
+
+scene.y: extern.h
+
+logo:
+	@echo "(c) 1991, 1993  INESC-Norte  Antonio Costa"
+	@echo "UNIX version "$(VERSION)
+
+normal:		logo $(OBJS)
+	@echo "Linking..."
+	$(LINK) $(LDFLAGS) $(OBJS) -o $(BINDIR)/$(EXEC) -l$(MATHLIB)
+	@chmod 755 $(BINDIR)/$(EXEC)
+	@echo "Compilation done"
+
+fast:		logo $(SRCS) $(HDRS)
+	@echo "Compiling..."
+	$(CC) $(CFLAGS) -c $(SRCS)
+	@echo "Linking..."
+	$(LINK) $(LDFLAGS) $(OBJS) -o $(BINDIR)/$(EXEC) -l$(MATHLIB)
+	@rm -f $(OBJS)
+	@echo "Compilation (fast) done"
+
+manual:		logo $(EXEC).man
+	@echo "Installing man..."
+	@rm -f $(MANDIR)/$(EXEC).1
+	@cp $(EXEC).man $(MANDIR)/$(EXEC).1
+	@chmod 644 $(MANDIR)/$(EXEC).1
+	@echo "Man installation done"
+
+clean:		logo
+	@echo "Removing object file(s)..."
+	@rm -f $(OBJS)
+	@echo "Clean done"
+
+cleanall:	logo $(SRCS) $(HDRS) $(ETCS) $(DOCS)
+	@echo "Removing all..."
+	@rm -f $(SRCS) $(HDRS) $(ETCS) $(DOCS)
+	@rm -f $(OBJS)
+	@echo "Clean all done"
+
+lint:		logo $(SRCS) $(HDRS)
+	@echo "Linting..."
+	@lint -n -v -x $(DEFS) $(SRCS) -l$(MATHLIB)|\
+	fgrep -v " unused"|\
+	fgrep -v " multiply"|\
+	fgrep -v " but never"
+	@echo "Lint check done"
+
+archive:	logo $(SRCS) $(HDRS) $(ETCS) $(DOCS)
+	@echo "Archiving..."
+	@rm -f $(EXEC).tar*
+	@tar cvf $(EXEC).tar $(HDRS) $(SRCS) $(ETCS) $(DOCS)
+	@chmod 600 $(EXEC).tar
+	@compress $(EXEC).tar
+	@echo "Archival done"
+
+extract:	logo $(EXEC).tar.Z
+	@echo "Extracting..."
+	@zcat $(EXEC).tar|tar xvf - $(HDRS) $(SRCS) $(ETCS) $(DOCS)
+	@echo "Extraction done"

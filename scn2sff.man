@@ -1,0 +1,752 @@
+.TH SCN2SFF 1G "October, 1993" 1
+.SH NAME
+scn2sff - format conversion program
+.SH SYNOPSIS
+.B scn2sff [options] {SCNfile|-} [>SFFfile]
+.SH AUTHOR
+Antonio Costa, INESC-Norte, 1991 1993
+.SH DESCRIPTION
+.I scn2sff
+command performs conversion between a text format (SCN)
+suitable for scene descriptions to another
+more simple text format (SFF) that is accepted by the
+.I rtrace
+ray-tracer program.
+The SCN text file describes objects, lights, surface
+definitions, textures, etc.
+The scene format is described bellow.
+.SH OPTIONS
+[C]
+.br
+The parameter
+.I C
+tells the program to preprocess the input file through the UNIX
+standard preprocessor (/usr/lib/cpp with option -P).
+.PP
+[M]
+.br
+The parameter
+.I M
+tells the program to preprocess the input file through the M4
+preprocessor (/usr/bin/m4).
+.PP
+[P\fI"preprocessor command"\fR]
+.br
+The parameter
+.I P
+tells the program to preprocess the input file through the
+command described (for example, P"/usr/lib/cpp -P -Dabc").
+.PP
+[+O\fIobjects\fR]
+.br
+The parameter
+.I +O
+defines the maximum number of objects to use (default 25000).
+.PP
+[+L\fIlights\fR]
+.br
+The parameter
+.I +L
+defines the maximum number of lights to use (default 12).
+.PP
+[+S\fIsurfaces\fR]
+.br
+The parameter
+.I +S
+defines the maximum number of surfaces to use (default 512).
+.PP
+[+T\fItextures\fR]
+.br
+The parameter
+.I +T
+defines the maximum number of textures to use (default 64).
+.PP
+[+M\fItransforms\fR]
+.br
+The parameter
+.I +M
+defines the maximum number of transformations to use (default 64).
+.PP
+.SH RESTRICTIONS
+None for the moment.
+.SH BUGS
+No bugs known.
+They have to be hidden deep somewhere, as usual.
+.SH DESCRIPTION
+Comments start with % ; or # characters and continue to the
+end of the line (so there are no nested comments).
+.PP
+The commands are processed from the start of the scene, and some have a
+global effect until they are changed or the scene is complete. Such
+commands are
+\fIrefraction\fR, \fIsurface\fR, \fItransformations\fR and
+\fItextures\fR; as commands can be nested by grouping, any command
+defined inside a group is removed when that group is finished.
+.PP
+Example:
+.PP
+surface matte white        % current surface is matte white
+.br
+refraction 1.1             % current refraction index
+.br
+transform rotate x 15      % transformation
+.br
+group                      % start of a group of commands
+.br
+  surface matte red        % new current surface
+.br
+  transform scale 2        % transformation
+.br
+  sphere 0 0 0 1           % sphere object
+.br
+ungroup                    % end of group
+.br
+% back to matte white surface, refraction 1.1
+.br
+% scale transformation is removed
+.PP
+				ENTITIES
+.PP
+The main entities are:
+.PP
+\fIinteger\fR - it can be a simple number, an integer expression
+enclosed in parenthesis or the \fIint\fR function applied to any
+real expression.
+.PP
+\fIreal\fR - a number, a function or an expression enclosed in parenthesis.
+.PP
+\fIcolor\fR - a triplet of RGB real values between 0 and 1 (in certain
+cases, it is allowed to be greater than 1 or negative; called
+\fIcolor_extended\fR) or a name (like \fIred\fR, \fIblue\fR, etc).
+.PP
+\fIpoint\fR - a triplet of XYZ values (numbers, functions or expressions).
+.PP
+\fIvector\fR - similar to point, but the 3 components cannot be
+simultaneously equal to 0.
+.PP
+\fIfilename\fR - a set of characters with no blanks between.
+.PP
+\fIexpression\fR - anything enclosed in parenthesis. Operators are +, -, *,
+/, ^ (exponentiation) and | (remainder).
+.PP
+\fIfunction\fR - there are many functions available: \fIint\fR \fIsin\fR
+\fIcos\fR \fItan\fR \fIasin\fR \fIacos\fR \fIatan\fR \fIsqrt\fR \fIrtod\fR
+\fIdtor\fR \fIexp\fR \fIlog\fR \fIabs\fR \fImax\fR \fImin\fR. There also
+some functions that operate with vectors and return a number
+(\fIdotvector\fR) and some that return a vector or point
+(\fInormvector\fR \fIaddvector\fR \fIdiffvector\fR \fIscalevector\fR
+\fIcrossvector\fR).
+There is also an operator \fImono\fR that converts from a value to 3
+identical values (good for specifying monochromatic colors).
+
+				GENERAL COMMANDS
+.PP
+The main commands are:
+.PP
+\fIeye\fR (\fIfrom\fR) point - default {5,0,0}.
+.PP
+\fIlook\fR (\fIat\fR) point - default {0,0,0}.
+.PP
+\fIup\fR vector - default {0,1,0}.
+.PP
+\fIangle\fR (\fIfov\fR) horizontal [vertical] - half aperture view in
+degrees (default 22.5 degrees).
+.PP
+\fIbackground\fR color - the color of the background, at
+infinite distance (default light_sky_blue). 
+.PP
+\fIambient\fR color - the diffuse light that illuminates the whole
+scene (default is {0.1,0.1,0.1}).
+.PP
+\fIrefraction\fR (\fIior\fR) index - default is 1.
+.PP
+\fIgroup ... ungroup\fR - anything enclosed is only defined inside the
+block, ie, it does not apply outside.
+.PP
+				LIGHT COMMANDS
+.PP
+The commands for definition of light sources are:
+.PP
+\fIlight point\fR point [color_extended] - default color for lights is
+white.
+.PP
+\fIlight directional\fR vector [color].
+.PP
+\fIlight spot\fR point vector color_extended [angle [factor]] - the
+light illuminates inside a cone defined by the angle (default 45 degrees)
+and the transition can be sharp if factor is near 1 or smooth if
+factor >> 1 (default 1).
+.PP
+\fIlight extended\fR point color_extended radius samples - a spherical
+light (it is sampled by samples^2 rays).
+.PP
+\fIlight linear\fR point color_extended vector samples - a linear
+light (it is sampled by samples rays).
+.PP
+\fIlight planar\fR point color_extended vector1 vector2 samples1
+samples2 - a planar light (it is sampled by samples1*samples2 rays).
+The light area is defined by the two vectors.
+.PP
+				SURFACE COMMANDS
+.PP
+The commands for definition of surfaces are:
+.PP
+\fIsurface\fR color [diffusion specularity phong metalness [transparency]] -
+phong and metalness are values, the others are colors (defaults
+{0.9,0.9,0.9} {0.1,0.1,0.1} 3 0 {0.1,0.1,0.1} or transparency only
+{0,0,0}).
+.PP
+\fIsurface strauss\fR color smoothness metalness [transparency] - all
+colors (default transparency is {0,0,0}).
+.PP
+\fIsurface matte\fR color - all diffuse surface.
+.PP
+\fIsurface plastic\fR color smoothness phong - surface with big
+diffusion, small specularity and small phong factor.
+.PP
+\fIsurface metal\fR color smoothness phong - surface with small
+diffusion, big specularity, big phong factor and metalness factor equal
+to 1.
+.PP
+\fIsurface dielectric\fR color transparency refraction - transparent
+surface with no diffusion, some specularity, large phong factor and null
+metalness.
+.PP
+\fIsurface glass\fR color transparency - transparent surface with
+refraction index equal to 1.52, approximately.
+.PP
+There are two keywords that affect the surface appearance; they must be
+placed immediately after the \fIsurface\fR keyword:
+.PP
+\fIemitter\fR - the surface glows.
+.PP
+\fInoshadow\fR - the surface has no shadows from other objects.
+.PP
+				OBJECT COMMANDS
+.PP
+The commands for objects are of the form
+.br
+	\fIobject\fR object_data
+.br
+or else with local commands that apply only to itself of the form
+.br
+	\fIobject\fR [attributes ... \fIdata\fR] object_data.
+.PP
+\fIsphere\fR center radius.
+.PP
+\fIbox\fR center sizes - this is an axis-aligned box.
+.PP
+\fIcube\fR center size - again it is axis-aligned.
+.PP
+\fIcone\fR apex base base_radius - closed cone.
+.PP
+\fIcone open\fR apex base base_radius.
+.PP
+\fIcylinder\fR apex base radius - closed cylinder.
+.PP
+\fIcylinder open\fR apex base radius.
+.PP
+\fIcone truncated\fR apex apex_radius base base_radius - closed.
+.PP
+\fIcone truncated open\fR apex apex_radius base base_radius. 
+.PP
+\fIwedge\fR point point point depth - defined by a triangular face
+and depth (face is defined counterclockwise so that depth is measured
+in the opposite direction of Rigth Hand Rule thumb; 
+this convention also applies to other objects).
+.PP
+\fItetra\fR point point point point.
+.PP
+\fIprism\fR depth number_vertices point ... point - closed prism.
+.PP
+\fIprism open\fR depth number_vertices point ... point.
+.PP
+\fIpyramid\fR depth number_vertices point ... point - closed pyramid.
+.PP
+\fIpyramid open\fR depth number_vertices point ... point.
+.PP
+\fIpyramid truncated open\fR depth apex_scale number_vertices point ... point
+- it is an open pyramid with the apex scaled by apex_scale in relation
+to its base (if 0 it is an open pyramid, if 1 it is a prism).
+.PP
+\fIdisc\fR center normal radius.
+.PP
+\fIring\fR center normal outer_radius inner_radius.
+.PP
+\fIpatch\fR point ... point (12) - a bicubic patch is defined by its
+corners and 8 exterior points, arranged in this manner:
+.br
+                  11  12
+.br
+                7  8  9  10
+.br
+                3  4  5  6
+.br
+                   1  2
+.br
+Normal points according to Right Hand Rule using corners 4-5-9-8.
+.PP
+\fIpatch file\fR [point [point]] filename - a group of patches stored in
+a file; first point is a translation and second is a scale.
+.PP
+\fIpolygon\fR number_vertices point ... point - a polygon (can be
+concave, but does not have holes).
+.PP
+\fIpolygon file\fR [point [point]] filename - a group of polygons stored in
+a file; first point is a translation and second is a scale.
+.PP
+\fItriangle\fR point point point.
+.PP
+\fIquadrangle\fR point point point point.
+.PP
+\fItriangle normal\fR point vector point vector point vector - a
+triangle with normals in its vertices.
+.PP
+\fItriangle normal file\fR point point filename - a group of triangles
+with normals in the vertices stored in a file; first point is a translation
+and second is a scale.
+.PP
+\fItriangle general\fR point vector point vector point vector surface ...
+surface ... surface ... - a triangle with normals and surfaces in its vertices.
+.PP
+\fItriangle general file\fR point point filename - a group of triangles
+with normals and surfaces in the vertices stored in a file;
+first point is a translation and second is a scale.
+.PP
+\fItorus\fR outer_radius section_radius start_angle end_angle
+[outer_samples section_samples] - A closed torus is centered in
+{0,0,0} and lies in the XZ plane. 0 degrees is in the X direction and
+the angle increases counterclockwise.
+.PP
+\fItorus open\fR outer_radius section_radius start_angle end_angle
+[outer_samples section_samples] - An open torus.
+.PP
+\fItext3d file\fR filename - a group of text primitives stored in
+a file; each primitive is described by lines and arcs and is extruded
+(similar to a prism, in a certain way).
+.PP
+\fIcsg\fR begin - start of a CSG primitive, ie, left component.
+.PP
+\fIcsg\fR next - right component of a CSG primitive.
+.PP
+\fIcsg\fR end - end of a CSG primitive.
+.PP
+\fIlist\fR begin - start of a list primitive (no nesting allowed).
+.PP
+\fIlist\fR end - end of a list primitive.
+.PP
+				TRANSFORMATION COMMANDS
+.PP
+A transformation may be defined globaly or inside a block, and it
+is post-concatenated with previous transformations. If inside a block,
+when the block is terminated the transformations defined inside it are
+removed. Also, when a transformation is an attribute of an object or
+texture it only exists for that entity.
+.PP
+\fItransform none\fR - removes all transformations.
+.PP
+\fItransform scale\fR factor [factor factor].
+.PP
+\fItransform translate\fR point.
+.PP
+\fItransform rotate x\fR angle.
+.PP
+\fItransform rotate y\fR angle.
+.PP
+\fItransform rotate z\fR angle.
+.PP
+\fItransform rotate\fR axis angle.
+.PP
+\fItransform general\fR point point point [point].
+.PP
+				TEXTURE COMMANDS
+.PP
+A texture is basically a modification of the surface characteristics of
+an object, a modification of the normal vector in the intersection point
+or the modification of the intersection point itself. It is possible to
+apply transformations to textures, and even keep them independent from
+the object transformations.
+.PP
+\fItexture none\fR - remove all defined textures.
+.PP
+\fItexture scale\fR factor [factor factor].
+.PP
+\fItexture translate\fR point.
+.PP
+\fItexture rotate x\fR angle.
+.PP
+\fItexture rotate y\fR angle.
+.PP
+\fItexture rotate z\fR angle.
+.PP
+\fItexture rotate\fR axis angle.
+.PP
+\fItexture general\fR point point point [point].
+.PP
+\fItexture local\fR - generate all the transformations necessary to
+access the object directly, without considering any object transformations
+previously defined.
+.PP
+\fIcheckers\fR surface [transform] - a chessboard-like pattern of the
+current surface and the defined surface.
+.PP
+\fIblotch\fR scale surface [filename] [transform] - A spray-like mixture
+of 2 surfaces (the current and the defined). The scale controls the
+mixture. If a filename is given, it is interpreted as a color palette,
+and it must contain 256 triplets of RGB values in the range 0 to 255
+(this format is equal for all the textures that have a \fIfilename\fR
+parameter, except \fIimagemap\fR).
+.PP
+\fIbump\fR scale [transform] - A normal-modifying texture.
+.PP
+\fImarble\fR [filename] [transform] - A marble-like texture.
+.PP
+\fIfbm\fR offset scale omega lambda threshold octaves [filename]
+[transform] - A fractal brownian motion texture that changes diffusion
+and specularity.
+.PP
+\fIfbmbump\fR offset scale lambda octaves [transform] - a texture that
+modifies the normal.
+.PP
+\fIwood\fR color [transform] - A texture imitating wood (default color is
+\fIbrown\fR).
+.PP
+\fIround\fR scale [transform] - strange texture that modifies diffusion and
+specularity.
+.PP
+\fIbozo\fR turbulence [filename] [transform].
+.PP
+\fIripples\fR frequency phase scale [transform] - a texture that imitates
+ripples (small sinusoidal perturbations of the surface).
+.PP
+\fIwaves\fR frequency phase scale [transform] - a texture like waves
+(multi-interfering sinusoidal perturbations of the surface).
+.PP
+\fIspotted\fR [filename] [transform] - small color spots.
+.PP
+\fIdents\fR scale [transform] - small modifications of normal that imitate
+dents.
+.PP
+\fIagate\fR [filename] [transform].
+.PP
+\fIwrinkles\fR [transform] - a texture that modifies normal imitating wrinkles.
+.PP
+\fIgranite\fR [filename] [transform].
+.PP
+\fIgradient\fR turbulence direction [filename] [transform] - This texture
+produces a variation of color following direction given.
+.PP
+\fIimagemap\fR turbulence mode u_axis v_axis filename [transform] - An
+image-mapping texture. Mode parameter controls tiling of texture
+(0-yes, nonzero-no).
+The u_axis and v_axis specify the internal texture axis from the 3D axis
+(1-X, 2-Y, 3-Z).
+A filename must be given, because it is the image that will be drawn on
+the surface (the format of the image is the \fIrtrace\fR format PIC).
+.PP
+\fIgloss\fR scale [transform] - Glossy-like texture that changes diffusion,
+specularity and phong factor.
+.PP
+\fIbump3\fR scale size [transform] - A normal-modifying texture. Changes
+intersection point, so may produce strange results!
+.SH EXAMPLES
+Here are some simple examples:
+.PP
+%%%%% example 1
+.br
+% light source
+.br
+light point 4 3 1
+.br
+% surface
+.br
+surface matte red
+.br
+sphere 0 0 0 1
+.br
+% another surface (replaces previous)
+.br
+surface plastic blue mono 0.3 0.3
+.br
+sphere 3 -0.4 0.4 0.2
+.br
+% another surface
+.br
+surface plastic yellow mono 0.9 0.9
+.br
+% transformations for next object(s)
+.br
+transform rotate y rtod(atan(1))
+.br
+transform translate 3 -0.4 -0.4
+.br
+box 0 0 0 0.1 0.1 0.3
+.br
+% remove previous transformation(s)
+.br
+transform none
+.br
+% another surface
+.br
+surface green mono 0.8 mono 0.2 10 0.3
+.br
+cone 3 0.1 0 3 -0.4 0 0.2
+.br
+surface matte white
+.br
+csg subtraction begin
+.br
+    sphere 0 0 0 1
+.br
+    csg next
+.br
+    box 0 0 0 1.1 0.4 0.4
+.br
+csg end
+.br
+.PP
+This example is correct, although it does not take full usage of SCN,
+ie, the capability of defining locally the attributes. It could be
+rewritten:
+.PP
+%%%%% example 2
+.br
+% light source
+.br
+light point 4 3 1
+.br
+% now all objects have local attributes
+.br
+sphere
+.br
+    surface matte red
+.br
+    data 0 0 0 1
+.br
+sphere
+.br
+    surface plastic blue mono 0.3 0.3
+.br
+    data 3 -0.4 0.4 0.2
+.br
+box
+.br
+    surface plastic yellow mono 0.9 0.9
+.br
+    % local transformations
+.br
+    transform rotate y rtod(atan(1))
+.br
+    transform translate 3 -0.4 -0.4
+.br
+    % this object is defined in a local coords system
+.br
+    % the translation puts it in the right place
+.br
+    data 0 0 0 0.1 0.1 0.3
+.br
+cone
+.br
+    surface green mono 0.8 mono 0.2 10 0.3
+.br
+    data 3 0.1 0 3 -0.4 0 0.2
+.br
+csg subtraction surface matte white
+.br
+    data begin
+.br
+    sphere 0 0 0 1
+.br
+    csg next
+.br
+    box 0 0 0 1.1 0.4 0.4
+.br
+csg end
+.br
+.PP
+To produce an image from any of these examples, the example should be
+stored in a file (suppose \fIexample.scn\fR) and then execute
+.br
+  scn2sff example.scn|rtrace w512 p2 A0.1 - example.pic
+.br
+to create the image.
+If the SCN file contained any \fIcpp\fR preprocessor directives, then
+.br
+  scn2sff C example.scn|rtrace w512 p2 A0.1 - example.pic
+.br
+would do.
+.PP
+A complete demo example follows:
+.br
+[Start]
+.br
+% example to be traced with parameters like
+.br
+% w512 p2 A0.1 t1 I1 - good quality
+.br
+% or then
+.br
+% w512 p3 A.05 t1 I1 j1 - very good quality
+.br
+
+.br
+%%%%% start
+.br
+eye 5 2 2
+.br
+fov 20
+.br
+background light_sky_blue
+.br
+ambient mono 0.2 % dark grey
+.br
+
+.br
+light point 3 5 4 white
+.br
+
+.br
+surface matte red % default surface
+.br
+
+.br
+%%%%% a simple CSG example
+.br
+csg subtraction begin
+.br
+% no attributes for this CSG, so it uses the attributes
+.br
+% of its nodes...
+.br
+
+.br
+  % left node
+.br
+  csg subtraction
+.br
+    % attributes of this CSG object
+.br
+    surface matte white
+.br
+    texture scale 0.2
+.br
+    checkers surface matte mono 0.3 translate 0.1 0.1 0.1
+.br
+    data begin
+.br
+
+.br
+    box 0 0 0 1 1 1
+.br
+
+.br
+  csg next
+.br
+
+.br
+    box 0 0 0 1.01 0.5 0.5
+.br
+    cylinder 0 1.01 0 0 -1.01 0 0.5
+.br
+
+.br
+  csg end
+.br
+
+.br
+csg next
+.br
+
+.br
+  % right node
+.br
+  sphere 1 1 1 0.5 % default surface assumed
+.br
+  sphere 1 1 -1 0.5
+.br
+  sphere surface matte blue data 1 -1 1 0.5
+.br
+  sphere surface matte blue data 1 -1 -1 0.5
+.br
+
+.br
+csg end
+.br
+
+.br
+%%%%% some 3D text
+.br
+text3d file surface matte yellow
+.br
+  data csg.t3d % data is in file
+.br
+
+.br
+%%%%% end
+.br
+[End]
+.br
+.PP
+The csg.t3d file contents could be:
+.br
+[Start]
+.br
+spacing 0.1
+.br
+orientation 0 0 -1 0 1 0 1 0 0
+.br
+encoding abc.ppe
+.br
+font zurichcg.ppf
+.br
+scale 0.4 0.4 0.2 
+.br
+at 1.25 1.5 1.6 "Antonio Costa"
+.br
+font renfrew.ppf
+.br
+scale 0.4 0.4 0.1
+.br
+at 1.1 -0.85 1.1 "/copyright/1992"
+.br
+at 1.1 -1.3 1.1 "INESCn"
+.br
+
+.br
+# there must be an empty line in the end
+.br
+Description:
+.br
+SPACING is letter spacing
+.br
+ORIENTATION defines how the text appears 
+.br
+ - 1st: text direction vector (left to right)
+.br
+ - 2nd: vertical vector
+.br
+ - 3rd: depth vector
+.br
+ENCODING associates logical character names to glyph numbers
+.br
+FONT is the file where the 2D glyphs are defined
+.br
+SCALE controls scaling along ORIENTATION vectors
+.br
+AT is baseline lower left position of text plus text (quoted)
+.br
+[End]
+.SH HISTORY
+Copyright (C) 1991, 1993 Antonio Costa.
+.br
+Permission is granted to use this file in whole or
+in part for any purpose, educational,
+recreational or commercial, provided that this copyright notice
+is retained unchanged. This software is available to all free of
+charge by anonymous FTP.
+.TP
+12-Oct-93  Antonio Costa
+.br
+Release 1.6.4
+.br
+acc@asterix.inescn.pt

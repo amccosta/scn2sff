@@ -1,0 +1,26 @@
+#! /bin/csh -f
+set command=`basename $0`
+set TMP=/tmp/$command"$$"
+onintr quit
+cat <<EOF >$TMP
+/^[ 	]*[0-9]+[ 	]*\$/	{ rand = \$1
+				  exit }
+				{ print "\$1 is not a number"
+				  exit }
+END				{ if (rand <= 0) rand = 10
+				  for (i = 0; i < 256; i++)
+				  {
+		 		    c = (i * rand) % 256
+				    if (c < 0) c = -c
+				    printf "%d ", c
+		 		    c = ((i - 2) * rand) % 256
+				    if (c < 0) c = -c
+				    printf "%d ", c
+				    c = ((i - 4) * rand) % 256
+				    if (c < 0) c = -c
+				    printf "%d\n", c }
+				  }
+EOF
+awk -f $TMP
+quit:
+if (-w $TMP) rm -f $TMP

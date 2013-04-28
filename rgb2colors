@@ -1,0 +1,25 @@
+#! /bin/csh -f
+set command=`basename $0`
+set TMP=/tmp/$command"$$"
+onintr quit
+cat <<EOF >$TMP
+/^[0-9]+ +[0-9]+ +[0-9]+[ 	]+[a-z]/	{
+	printf "  \"%s", \$4
+	for (i = 5; i <= NF; i++)
+	  printf "_%s", \$i
+	printf "\", "
+	printf "{%g, %g, %g},\n", \$1 / 255.0, \$2 / 255.0, \$3 / 255.0
+	next
+	}
+/^[0-9]+ +[0-9]+ +[0-9]+[ 	]+[A-Z]/	{
+	printf "  \""
+	for (i = 4; i <= NF; i++)
+	  printf "%s", \$i
+	printf "\", "
+	printf "{%g, %g, %g},\n", \$1 / 255.0, \$2 / 255.0, \$3 / 255.0
+	next
+	}
+EOF
+sort +3|awk -f $TMP|sort|uniq
+quit:
+if (-w $TMP) rm -f $TMP

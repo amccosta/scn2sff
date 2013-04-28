@@ -1,0 +1,40 @@
+#! /bin/csh -f
+set command=`basename $0`
+set TMP=/tmp/$command"$$"
+onintr quit
+cat <<EOF >$TMP
+/^void/	{
+	old = \$0
+	ok = 1
+	next }
+/^int/	{
+	old = \$0
+	ok = 1
+	next }
+/^boolean/	{
+	old = \$0
+	ok = 1
+	next }
+/^real/	{
+	old = \$0
+	ok = 1
+	next }
+/^char/	{
+	old = \$0
+	ok = 1
+	next }
+/^[_a-z]+\\(.*\\)\$/	{
+	FS = "("
+	if (ok)
+	{
+	  printf "%-16s", old
+	  printf "%s();\\n", \$1
+	}
+	FS = " "
+	ok = 0 }
+	{
+	ok = 0 }
+EOF
+cat $*|awk -f $TMP
+quit:
+if (-w $TMP) rm -f $TMP
